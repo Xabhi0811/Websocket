@@ -9,6 +9,10 @@ const Sender = () => {
     }
   }, []);
 
+  function startSendingVideo( ){
+    
+  }
+
   return <div>
     Sender
     <button onClick={startSendingVideo}>Send video</button>
