@@ -1,11 +1,18 @@
-import React from 'react'
+import { useEffect, useState } from "react";
 
 const Sender = () => {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+  const [socket , setSocket] = useState<WebSocket | null>(null);
+  useEffect(() =>{
+    const socket = new WebSocket('ws://;ocalhost:8080');
+    socket.onopen = () =>{
+      socket.send(JSON.stringify({type: 'sender'}));
+    }
+  }, []);
 
-export default Sender
+  return <div>
+    Sender
+    <button onClick={startSendingVideo}>Send video</button>
+  </div>
+};
+
+export default Sender;

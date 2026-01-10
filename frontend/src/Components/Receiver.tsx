@@ -1,11 +1,5 @@
-import React from 'react'
-
 const Receiver = () => {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+  return <div>Receiver Component</div>;
+};
 
-export default Receiver
+export default Receiver;
