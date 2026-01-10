@@ -1,72 +1,47 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react"
 
-const Receiver = () => {
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8080");
-
-    socket.onopen = () => {
-      console.log("🟢 Receiver WebSocket OPEN");
-      socket.send(JSON.stringify({ type: "receiver" }));
-    };
-
-    socket.onmessage = async (event) => {
-      const msg = JSON.parse(event.data);
-      console.log("📩 Receiver received:", msg.type);
-
-      if (msg.type === "createOffer") {
-        console.log("📥 Offer received");
-
-        const pc = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-        });
-
-        pcRef.current = pc;
-
-        pc.onicecandidate = (event) => {
-          if (event.candidate) {
-            console.log("🧊 Receiver ICE");
+export const Receiver = () => {
+    
+    useEffect(() => {
+        const socket = new WebSocket('ws://localhost:8080');
+        socket.onopen = () => {
             socket.send(JSON.stringify({
-              type: "iceCandidate",
-              candidate: event.candidate,
+                type: 'receiver'
             }));
-          }
-        };
+        }
+        startReceiving(socket);
+    }, []);
 
+    function startReceiving(socket: WebSocket) {
+        const video = document.createElement('video');
+        document.body.appendChild(video);
+
+        const pc = new RTCPeerConnection();
         pc.ontrack = (event) => {
-          console.log("🎬 Track received");
-          if (videoRef.current) {
-            videoRef.current.srcObject = event.streams[0];
-          }
-        };
+            video.srcObject = new MediaStream([event.track]);
+            video.play();
+        }
 
-        await pc.setRemoteDescription(msg.sdp);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
+        socket.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'createOffer') {
+                pc.setRemoteDescription(message.sdp).then(() => {
+                    pc.createAnswer().then((answer) => {
+                        pc.setLocalDescription(answer);
+                        socket.send(JSON.stringify({
+                            type: 'createAnswer',
+                            sdp: answer
+                        }));
+                    });
+                });
+            } else if (message.type === 'iceCandidate') {
+                pc.addIceCandidate(message.candidate);
+            }
+        }
+    }
 
-        socket.send(JSON.stringify({
-          type: "createAnswer",
-          sdp: pc.localDescription,
-        }));
-
-        console.log("📤 Answer sent");
-      }
-
-      if (msg.type === "iceCandidate") {
-        await pcRef.current?.addIceCandidate(msg.candidate);
-        console.log("➕ Receiver added ICE");
-      }
-    };
-  }, []);
-
-  return (
-    <div>
-      <h3>Receiver</h3>
-      <video ref={videoRef} autoPlay playsInline />
+    return <div>
+        hiii
     </div>
-  );
-};
-
-export default Receiver;
+}
